@@ -35,7 +35,7 @@ fs.readdir(levelsDirectory, (errorFolder, files) => {
 
     for (let file of files) {
         if (!file.endsWith('.json')) continue;
-        
+
         fs.readFile(levelsDirectory + '/' + file, (errorFile, contents) => {
             if (errorFile) throw errorFile;
             
@@ -141,6 +141,8 @@ let blankMessageCache = {
 
 let levelingChannel;
 exports.callback = async message => {
+    if (client.user.id !== liveClientId) return; // Don't want to track leveling on dev clients
+
     if (message.author.bot) return;
 
     let memberLevel = userLevels.get(message.member.id);

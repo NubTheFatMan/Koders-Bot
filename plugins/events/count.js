@@ -26,6 +26,7 @@ function resendPinnedMessage(channel) {
 }
 
 exports.callback = message => {
+    if (client.user.id !== liveClientId) return;
     if (message.author.bot) return;
     if (message.channel.id !== countingChannel) return;
     if (message.system) return;

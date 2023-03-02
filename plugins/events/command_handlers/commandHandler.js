@@ -5,7 +5,7 @@ exports.event = "messageCreate";
 exports.callback = message => {
     if (message.author.bot) return;
 
-    let prefix = '~';
+    let prefix = client.user.id === liveClientId ? '~' : devPrefix;
 
     let pat = [`<@${client.user.id}>`, `<@!${client.user.id}>`];
 
