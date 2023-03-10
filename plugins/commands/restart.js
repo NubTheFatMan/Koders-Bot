@@ -9,7 +9,7 @@ let responses = [
 ];
 
 exports.callback = (message, args) => {
-    if (adminRoles.includes(message.member.roles.highest.id)) {
+    if (message.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator)) {
         message.reply(responses[Math.floor(Math.random() * responses.length)]).then(msg => {
             process.exit();
         }).catch(console.error);

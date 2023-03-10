@@ -31,8 +31,7 @@ exports.callback = message => {
     if (message.channel.id !== countingChannel) return;
     if (message.system) return;
 
-    let member = message.member;
-    if (adminRoles.includes(member.roles.highest.id)) {
+    if (message.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator)) {
         if (message.content.startsWith(adminPrefix)) {
             let args = message.content.split(/ +/g);
             let cmd = args[0].substring(adminPrefix.length).toLowerCase();

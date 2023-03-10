@@ -2,7 +2,7 @@ exports.type = 'command';
 exports.name = "Hotloader";
 exports.calls = ['hotload', 'reload'];
 exports.callback = (message, args) => {
-    if (!adminRoles.includes(message.member.roles.highest.id)) return;
+    if (!message.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator)) return;
 
     if (args.length === 0) {
         message.reply('You need to specify a plugin to reload!').catch(console.error);

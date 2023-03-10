@@ -214,7 +214,7 @@ exports.interactionCallback = interaction => {
             failedToDm = true;
         }
 
-        await target.ban({reason: reason, days: interaction.options.getBoolean("keep-messages") ? 0 : 7});
+        await target.ban({reason: reason, days: interaction.options.getBoolean("keep-messages") === true ? 0 : 7});
         
         let response = `Banned **${target.displayName}**.`;
         if (failedToDm) response += " Failed to DM them.";
@@ -256,8 +256,6 @@ setInterval(() => {
 
         guild.bans.remove(ban.memberId, 'Ban duration is over.')
             .catch(err => messageDevs(`Unable to automatically unban <@${ban.memberId}> (**${ban.memberId}**): ${err}`));
-
-        console.log(`unbanned ${ban.memberId}`);
         
         ban.delete();
     })

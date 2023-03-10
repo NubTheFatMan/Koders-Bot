@@ -1,6 +1,5 @@
 exports.type = "command";
 exports.name = "Isolate";
-exports.calls = ['isolate', 'quarantine'];
 
 let isolatedFile = process.cwd() + '/userdata/isolatedUsers.json';
 global.isolatedUsers = JSON.parse(fs.readFileSync(isolatedFile));
@@ -92,70 +91,6 @@ setInterval(() => {
         }
     }
 }, 5_000);
-
-exports.callback = (message, args) => {
-    if (!adminRoles.includes(message.member.roles.highest.id)) return;
-    if (args.length === 0) return message.reply('You need at least one argument.');
-
-    let target = args.shift();
-    if (target.match(/<@[0-9]+>/)) target = target.match(/[0-9]+/);
-
-    let duration;
-    let reason;
-
-    if (args.length > 0) 
-        duration = parseTime(args.shift().toLowerCase());
-
-    if (args.length > 0) 
-        reason = args.join(' ');
-
-    // Search for ID
-    message.guild.members.fetch(target).then(member => {
-        if (member.id === client.user.id) return message.reply('<:hmm:968641662278565938>');
-        if (adminRoles.includes(member.roles.highest.id)) return message.reply('<a:homerhide:773607863569481728>');
-
-        if (getIsolationInstance(member)) {
-            return message.reply(`**${member.displayName}** is already isolated.`);
-        }
-        
-        isolateMember(member, duration, reason).then(isolation => {
-            let str = `<@${member.id}> isolated successfully.`;
-            
-            if (Number.isFinite(isolation.endTime)) 
-            str += ` They have been removed for **${formatTime(duration)}** and will return <t:${Math.round(isolation.endTime / 1000)}:f>.`;
-            
-            message.reply(str);
-        }).catch(err => {
-            message.reply(`Unable to isolate member fully: \`${err}\``)
-        });
-    }).catch(errorID => {
-        message.guild.members.fetch({query: target}).then(members => {
-            if (members.size > 1) return message.reply(`${members.size} members found with the query **${target}**. Please be more specific.`);
-            else if (members.size === 0) return message.reply(`Unable to find a member with the query of **${target}**.`);
-            
-            let member = members.first();
-            if (member.id === client.user.id) return message.reply('<:hmm:968641662278565938>');
-            if (adminRoles.includes(member.roles.highest.id)) return message.reply('<a:homerhide:773607863569481728>');
-
-            if (getIsolationInstance(member)) {
-                return message.reply(`**${member.displayName}** is already isolated.`);
-            }
-
-            isolateMember(member, duration, reason).then(isolation => {
-                let str = `<@${member.id}> isolated successfully.`;
-    
-                if (Number.isFinite(isolation.endTime)) 
-                    str += ` They have been removed for **${formatTime(duration)}** and will return <t:${Math.round(isolation.endTime / 1000)}:f>.`;
-    
-                message.reply(str);
-            }).catch(err => {
-                message.reply(`Unable to isolate member fully: \`${err}\``)
-            });
-        }).catch(errorNoNames => {
-            message.reply(`Unable to find a member with the query of **${target}**.`);
-        });
-    });
-}
 
 exports.commandObject = {
     name: "isolate",

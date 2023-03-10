@@ -1,53 +1,5 @@
 exports.type = "command";
 exports.name = "Remove From Isolation";
-exports.calls = ['unisolate', 'unquarantine', 'reinstate', 'removefromisolation'];
-
-exports.callback = (message, args) => {
-    if (!adminRoles.includes(message.member.roles.highest.id)) return;
-    if (args.length === 0) return message.reply('You need at least one argument.');
-
-    let target = args.shift();
-    if (target.match(/<@[0-9]+>/)) target = target.match(/[0-9]+/);
-
-    if (args.length > 0) 
-        duration = parseTime(args.shift().toLowerCase());
-
-    if (args.length > 0) 
-        reason = args.join(' ');
-
-    // Search for ID
-    message.guild.members.fetch(target).then(member => {
-        if (member.id === client.user.id) return message.reply('<:hmm:968641662278565938>');
-        if (adminRoles.includes(member.roles.highest.id)) return message.reply('<a:homerhide:773607863569481728>');
-
-        if (!getIsolationInstance(member)) {
-            return message.reply(`**${member.displayName}** is not currently isolated.`);
-        }
-        
-        removeFromIsolation(member)
-            .then(() => message.reply(`<@${member.id}> removed from isolated successfully.`))
-            .catch(err => message.reply(`Unable to isolate member fully: \`${err}\``));
-    }).catch(errorID => {
-        message.guild.members.fetch({query: target}).then(members => {
-            if (members.size > 1) return message.reply(`${members.size} members found with the query **${target}**. Please be more specific.`);
-            else if (members.size === 0) return message.reply(`Unable to find a member with the query of **${target}**.`);
-            
-            let member = members.first();
-            if (member.id === client.user.id) return message.reply('<:hmm:968641662278565938>');
-            if (adminRoles.includes(member.roles.highest.id)) return message.reply('<a:homerhide:773607863569481728>');
-
-            if (!getIsolationInstance(member)) {
-                return message.reply(`**${member.displayName}** is not currently isolated.`);
-            }
-
-            removeFromIsolation(member)
-                .then(() => message.reply(`<@${member.id}> removed from isolated successfully.`))
-                .catch(err => message.reply(`Unable to isolate member fully: \`${err}\``));
-        }).catch(errorNoNames => {
-            message.reply(`Unable to find a member with the query of **${target}**.`);
-        });
-    });
-}
 
 exports.commandObject = {
     name: "remove-from-isolation",
