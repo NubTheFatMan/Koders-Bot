@@ -52,6 +52,7 @@ exports.callback = (message, args) => {
 exports.commandObject = {
     name: "remove-from-isolation",
     description: "Remove a member from isolation",
+    default_member_permissions: 2, // 2 = kick members
     options: [
         {
             name: "member",

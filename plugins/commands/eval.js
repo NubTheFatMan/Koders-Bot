@@ -13,7 +13,7 @@ function log() {
 let oldLog = console.log;
 
 exports.callback = (message, args) => {
-    if (!adminRoles.includes(message.member.roles.highest.id)) return;
+    if (!message.member.permissions.has(Discord.PermissionsBitField.Flags.Administrator)) return;
 
     if (!args.length) return message.reply(`You must provide code to evaluate.`);
 

@@ -27,7 +27,7 @@ global.blankLevel = {
     wantsPing: true // User can set this false and the bot wont @ them upon leveling up
 }
 
-global.levelsDirectory = process.cwd() + '/levels';
+global.levelsDirectory = process.cwd() + '/userdata/levels';
 global.userLevels = new Map();
 
 fs.readdir(levelsDirectory, (errorFolder, files) => {

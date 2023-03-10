@@ -32,7 +32,9 @@ global.loadFile = file => {
 
     let plugin = require(file);
     if (plugin.type === 'command') {
-        commands.set(plugin.name, plugin);
+        if (plugin.calls instanceof Array && plugin.callback) {
+            commands.set(plugin.name, plugin);
+        }
 
         if (plugin.commandObject?.name && plugin.interactionCallback) {
             slashCommands.set(plugin.commandObject.name, plugin);

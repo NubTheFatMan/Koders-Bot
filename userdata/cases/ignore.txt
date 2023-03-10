@@ -1,0 +1,3 @@
+ignore this file :moyai:
+
+This file just exists so /cases is uploaded to git, however `/plugins/commands/cases.js` will ignore this text file

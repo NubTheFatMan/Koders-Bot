@@ -1,0 +1,3 @@
+ignore this file :moyai:
+
+This file just exists so /bans is uploaded to git, however `/plugins/commands/ban.js` will ignore this text file

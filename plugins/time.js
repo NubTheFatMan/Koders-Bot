@@ -11,6 +11,8 @@ global.parseTime = input => {
     if (typeof input !== "string") return NaN;
     if (input.includes("forever")) return Infinity;
 
+    if (!input.match(/[0-9]/)) return new Error("No number to quantify time.");
+
     let keys = Object.keys(times);
     let regexSplitter = new RegExp(`[(${keys.join(')(?:')})]`, 'g');
     let slicePosition = 0;
