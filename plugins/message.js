@@ -1,11 +1,14 @@
 let devChannel;
 global.messageDevs = message => {
+	if (!client.isReady())
+		return;
+
     if (!devChannel) {
         devChannel = client.channels.resolve(startChannel);   
     }
 
     if (devChannel) {
-        devChannel.send(message).catch(console.error);
+        return devChannel.send(message).catch(console.error);
     } else {
         console.error(`Could not send message to ${devChannel}`);
         console.log(message);

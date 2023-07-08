@@ -30,6 +30,17 @@ global.blankLevel = {
 global.levelsDirectory = process.cwd() + '/userdata/levels';
 global.userLevels = new Map();
 
+global.levelRoles = {};
+levelRoles[  1] = '1077793696633847858';
+levelRoles[  5] = '1077794221009948712';
+levelRoles[ 10] = '1077794718357929995';
+levelRoles[ 15] = '1077795203768909844';
+levelRoles[ 20] = '1077795466370089052';
+levelRoles[ 30] = '1077795704505905202';
+levelRoles[ 40] = '1077795804955295875';
+levelRoles[ 50] = '1077795941400199301';
+levelRoles[100] = '1077796218954072114';
+
 fs.readdir(levelsDirectory, (errorFolder, files) => {
     if (errorFolder) throw errorFolder; // Not gonna error handle since this is important
 
@@ -74,12 +85,21 @@ global.getExperienceToReachLevel = desiredLevel => {
     }
 }
 
+function manageLevelRoles(member, roleToAdd, roleToRemove) {
+    member.roles.add(roleToAdd).then(() => {
+        if (roleToRemove) {
+            member.roles.remove(roleToRemove).catch(err => messageDevs(`Unable to remove level role <@&${roleToRemove}> from <@${member.id}>: ${err}`));
+        } 
+    }).catch(err => messageDevs(`Unable to add level role <@&${roleToRemove}> to <@${member.id}>: ${err}`));
+}
+
 global.addUserExperience = (userIdOrMessage, amount) => {
     let isMessage = userIdOrMessage instanceof Discord.Message;
     let isString = typeof userIdOrMessage === "string";
 
     let userLevelInformation;
     let id;
+    let member;
     if (isString) {
         if (typeof amount !== "number")
             throw new Error("Bad argument #2: Expected a number, got " + typeof amount);
@@ -95,6 +115,7 @@ global.addUserExperience = (userIdOrMessage, amount) => {
         if (!userLevelInformation) 
             userLevelInformation = Object.assign({}, blankLevel);
     } else if (isMessage) {
+        member = userIdOrMessage.member;
         id = userIdOrMessage.author.id;
         userLevelInformation = userLevels.get(id);
         if (!userLevelInformation) 
@@ -116,6 +137,20 @@ global.addUserExperience = (userIdOrMessage, amount) => {
             userLevelInformation.experience -= userLevelInformation.experiencedNeededToLevel;
             userLevelInformation.level++;
             userLevelInformation.experiencedNeededToLevel = getExperienceToLevel(userLevelInformation.level);
+
+            let level = userLevelInformation.level;
+            if (levelRoles[level]) {
+                let lastRoleIndex = Object.keys(levelRoles).indexOf(level) - 1;
+                let roleToRemove = levelRoles[lastRoleIndex];
+                
+                if (!member) {
+                    client.guilds.cache.first().members.fetch(userIdOrMessage)
+                        .then(member => manageLevelRoles(member, levelRoles[level], roleToRemove))
+                        .catch(err => message(`Couldn't fetch member for **${userIdOrMessage}** so no level roles were added or removed: ${err}`));
+                } else {
+                    manageLevelRoles(member, levelRoles[level], roleToRemove);
+                }
+            }
         }
 
         userLevels.set(id, userLevelInformation);

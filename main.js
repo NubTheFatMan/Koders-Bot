@@ -31,6 +31,7 @@ global.loadFile = file => {
     }
 
     let plugin = require(file);
+    if (!plugin.name) plugin.name = file;
     if (plugin.type === 'command') {
         if (plugin.calls instanceof Array && plugin.callback) {
             commands.set(plugin.name, plugin);
@@ -70,3 +71,24 @@ requireAll('./plugins');
 refreshEvents();
 
 client.login();
+
+global.isRestarting = false;
+global.kodersRestart = () => {
+    isRestarting = true;
+}
+
+process.on('unhandledRejection', (reason, promise) => {
+    messageDevs(`A promise wasn't handled with a \`.catch()\`.\`\`\`\n${reason.stack}\`\`\``);
+});
+process.on('uncaughtException', (error, origin) => {
+    // Since an error occured, send a message to the dev channel and 
+    // safely save all files before actually terminating the process (preventing corrupting any .json mid-save)
+
+    // Used to make sure a message is sent to the dev channel at least before a restart
+    let devMessagePromise = messageDevs(`An exception wasn't caught. Since part of the bot may be corrupted, saving all json files and restarting.`);
+    if (devMessagePromise) {
+        devMessagePromise.then(kodersRestart)
+    } else {
+        kodersRestart();
+    }
+});
