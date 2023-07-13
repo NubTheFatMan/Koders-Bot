@@ -1,7 +1,7 @@
 exports.type = "command";
 exports.name = "Isolate";
 
-let isolatedFile = process.cwd() + '/userdata/isolatedUsers.json';
+global.isolatedFile = process.cwd() + '/userdata/isolatedUsers.json';
 global.isolatedUsers = JSON.parse(fs.readFileSync(isolatedFile));
 
 global.isolateMember = (target, duration = 0, reason = null) => {
