@@ -1,7 +1,8 @@
 global.Case = class Case {
     static entries = new Map();
+    static cacheSize = 50;
     static directory = process.cwd() + '/userdata/cases';
-    static channelId = "771529639054278696";
+    static channelId = caseChannelID;
 
     static types = { 
         kick: 0,
@@ -28,7 +29,7 @@ global.Case = class Case {
         if (!Object.values(this.constructor.types).includes(options.type))
             throw new Error("Invalid 'type' number. See Case.types");
 
-        this.number = NaN;
+        this.number = typeof options.number == "number" && Number.isFinite(options.number) ? options.number : NaN;
 
         this.type = options.type;
 
@@ -47,6 +48,7 @@ global.Case = class Case {
         this.messageId = typeof options.messageId === "string" ? options.messageId : null;
     }
 
+    // TODO: Make compatible with partially integrated cache system
     generateCaseNumber() {
         let highestIndex = 0;
         this.constructor.entries.forEach(caseEntry => {
@@ -88,18 +90,23 @@ global.Case = class Case {
         this.saveFile();
     }
 
-    delete() {
+    async delete() {
         if (this.isSaved)
             fs.unlinkSync(this.filePath);
         
         if (this.constructor.entries.has(this.number))
             this.constructor.entries.delete(this.number);
-    }
-    get deleted() {
-        return !this.isSaved && !this.constructor.entries.has(this.number);
+
+        await this.deleteMessage();
+
+        this.number = null;
+        this.type = null;
+        this.reason = null;
+        this.enforcers = [];
+        this.targets = [];
     }
 
-    get fetchChannel() {
+    fetchChannel() {
         return new Promise(async (resolve, reject) => {
             if (!client.isReady())
                 return reject(new Error("Client is not ready."));
@@ -111,7 +118,7 @@ global.Case = class Case {
             resolve(channel);
         });
     }
-    get fetchMessage() {
+    fetchMessage() {
         return new Promise(async (resolve, reject) => {
             if (this.messageId === null)
                 return reject(new Error("No message to delete."));
@@ -142,6 +149,24 @@ global.Case = class Case {
         return this.constructor.typeColors[this.type];
     }
 
+    get embed() {
+        let embed = new Discord.EmbedBuilder()
+            .setTitle(`Case ${this.number}: ${this.typeName}`)
+            .setColor(this.typeColor)
+            .setFooter({text: `Case #${this.number}`})
+            .setTimestamp(this.createdTimestamp)
+            .setDescription(this.reason ?? "No reason provided.");
+
+        let enforcedOn = Math.round(this.createdTimestamp / 1000);
+        embed.addFields(
+            {name: `Affected Member${this.targets.length !== 1 ? 's' : ''}`, value: this.targets.length > 0 ? `<@${this.targets.join('>, <@')}>` : 'No one has been listed.'},
+            {name: 'Enforced By', value: this.enforcers.length > 0 ? `<@${this.enforcers.join('>, <@')}>` : 'No one has been listed.'},
+            {name: 'Enforced On', value: `<t:${enforcedOn}:f> (<t:${enforcedOn}:R>)`}
+        );
+
+        return embed;
+    }
+
     updateMessage() {
         return new Promise(async (resolve, reject) => {
             if (!Number.isFinite(this.number))
@@ -149,28 +174,14 @@ global.Case = class Case {
 
             let message;
             try {
-                message = await this.fetchMessage();
+                message = await this.fetchMessage().catch(()=>{});
             } finally {}
-            
-            let embed = new Discord.EmbedBuilder();
-            embed.setTitle(`Case: ${this.typeName}`);
-            embed.setColor(this.typeColor);
-            embed.setFooter(`Case #${this.number}`);
-            embed.setTimestamp(this.createdTimestamp);
-            embed.setDescription(this.reason !== null ? this.reason : "No reason provided.");
-
-            let enforcedOn = Math.round(this.createdTimestamp / 1000);
-            embed.addFields(
-                {name: `Affected Member${this.targets.length !== 1 ? 's' : ''}`, value: this.targets.length > 0 ? `<@${this.targets.join('>, <@')}>` : 'No one has been listed.'},
-                {name: 'Enforced By', value: this.enforcers.length > 0 ? `<@${this.enforcers.join('>, <@')}>` : 'No one has been listed.'},
-                {name: 'Enforced On', value: `<t:${enforcedOn}:f> (<t:${enforcedOn}:R>)`}
-            );
 
             if (message) {
-                resolve(await message.edit({embeds: [embed]}));
+                resolve(await message.edit({embeds: [this.embed]}));
             } else {
                 let channel = await this.fetchChannel();
-                let newMessage = await channel.send({embeds: [embed]});
+                let newMessage = await channel.send({embeds: [this.embed]});
                 this.messageId = newMessage.id;
                 this.saveFile();
                 resolve(newMessage);
@@ -182,7 +193,7 @@ global.Case = class Case {
             let message = await this.fetchMessage();
 
             await message.delete();
-            resolve(message);
+            resolve();
         });
     }
 
@@ -191,19 +202,45 @@ global.Case = class Case {
         caseEntry.save();
         return caseEntry;
     }
+
+    static fetch(number) {
+        return new Promise((resolve, reject) => {
+            if (!Number.isFinite(number))
+                return reject(new Error("Invalid case number, must be finite."));
+
+            let fromCache = this.entries.get(number);
+            if (fromCache) 
+                return resolve(fromCache);
+
+            let caseData;
+            try {
+                caseData = fs.readFileSync(`${this.directory}/${number}.json`);
+            } catch (error) {
+                return reject(new Error("Case doesn't exist"));
+            }
+
+            try {
+                caseData = JSON.parse(caseData);
+            } catch (error) {
+                return reject(new Error("Unable to parse case file"));
+            }
+
+            resolve((new this(caseData)).saveEntry());
+        });
+    }
 }
 
 
 // Populating Case.entries on startup
-let fileNames = fs.readdirSync(Case.directory);
-for (let fileName of fileNames) {
-    if (fileName.endsWith('.json')) {
-        fs.readFile(Case.directory + '/' + fileName, (err, contents) => {
-            if (err) return console.error(err.stack);
+// let fileNames = fs.readdirSync(Case.directory);
+// for (let fileName of fileNames) {
+//     if (fileName.endsWith('.json')) {
+//         fs.readFile(Case.directory + '/' + fileName, (err, contents) => {
+//             if (err) return console.error(err.stack);
             
-            let options = JSON.parse(contents);
-            let caseEntry = new Case(options);
-            caseEntry.saveEntry();
-        });
-    }
-}
+//             let options = JSON.parse(contents);
+//             let caseEntry = new Case(options);
+//             caseEntry.saveEntry();
+//         });
+//     }
+// }

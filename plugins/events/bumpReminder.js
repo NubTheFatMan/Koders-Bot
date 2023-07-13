@@ -2,11 +2,6 @@ exports.type = 'event';
 exports.name = 'Bump Reminders';
 exports.event = 'messageCreate';
 
-let disboardId = '302050872383242240';
-let bumpedReaction = '⏱️';
-let bumpRoleId = '1081036398775250975';
-let bumpChannelId = '771528387650125855';
-
 let bumpFile = process.cwd() + '/userdata/nextBumpMessage.txt';
 
 let nextBumpTimestamp = 0;

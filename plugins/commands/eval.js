@@ -39,9 +39,7 @@ exports.callback = (message, args) => {
         if (!msgObj.content) {
             if (result.length > 1900) {
                 let buffer = Buffer.from(
-                    result.replace(process.env.OPENAI_API_KEY, 'HIDDEN')
-                    .replace(process.env.DISCORD_BOT_TOKEN, "HIDDEN")
-                    .replace(process.env.TEST_BOT_TOKEN, "HIDDEN")
+                    result.replace(process.env.DISCORD_TOKEN, 'HIDDEN')
                 );
                 msgObj.content = `Evaluated without error.\n⏱️ Took \`${time}\``;
 

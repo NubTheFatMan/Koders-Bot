@@ -5,7 +5,7 @@ exports.event = "messageCreate";
 // Channel where levelups are posted
 let levelingAnnouncementChannel = '1077774360452014111';
 
-let cooldown = 2000; // ms between messages to count xp
+let cooldown = 1000; // ms between messages to count xp
 let minimumMessageLength = 0; // How long messages should be to count XP
 
 // If these are in a message, they are limited and give a fixed amount of XP
@@ -13,7 +13,9 @@ let minimumMessageLength = 0; // How long messages should be to count XP
 let fixedAmountPatterns = /(<((@(!|&)?|#)[0-9]+|a?:.+:[0-9]+|t:[0-9]+(:\w)?)>|https?:\/\/\S+)/g;
 
 let fixedPatternAmount  = 10; // Patterns matched above will add this amount of XP
-let attachmentAmount    = 25; // Attachments to a message will add this amount of XP
+let attachmentAmount    = 15; // Attachments to a message will add this amount of XP
+
+let boosterMultiplier = 1.4; // Multiple the XP gained by this amount of the member is a server booster
 
 // Maximum level. Currently set to the level before experienceNeededToLevel would roll over on 32 bit
 let maxLevel = 1089; 
@@ -31,16 +33,18 @@ global.levelsDirectory = process.cwd() + '/userdata/levels';
 global.userLevels = new Map();
 
 global.levelRoles = {};
-levelRoles[  1] = '1077793696633847858';
-levelRoles[  5] = '1077794221009948712';
-levelRoles[ 10] = '1077794718357929995';
-levelRoles[ 15] = '1077795203768909844';
-levelRoles[ 20] = '1077795466370089052';
-levelRoles[ 30] = '1077795704505905202';
-levelRoles[ 40] = '1077795804955295875';
-levelRoles[ 50] = '1077795941400199301';
-levelRoles[100] = '1077796218954072114';
+levelRoles[ 1] = '1077793696633847858';
+levelRoles[ 5] = '1077794221009948712';
+levelRoles[10] = '1077794718357929995';
+levelRoles[15] = '1077795203768909844';
+levelRoles[20] = '1077795466370089052';
+levelRoles[25] = '1077795704505905202';
+levelRoles[30] = '1077795804955295875';
+levelRoles[37] = '1077795941400199301';
+levelRoles[60] = '1077796218954072114';
 
+// TODO: Switch to a cache system where it only loads if the user is actively chatting and
+// unloads after a while when they stop chatting
 fs.readdir(levelsDirectory, (errorFolder, files) => {
     if (errorFolder) throw errorFolder; // Not gonna error handle since this is important
 
@@ -90,7 +94,7 @@ function manageLevelRoles(member, roleToAdd, roleToRemove) {
         if (roleToRemove) {
             member.roles.remove(roleToRemove).catch(err => messageDevs(`Unable to remove level role <@&${roleToRemove}> from <@${member.id}>: ${err}`));
         } 
-    }).catch(err => messageDevs(`Unable to add level role <@&${roleToRemove}> to <@${member.id}>: ${err}`));
+    }).catch(err => messageDevs(`Unable to add level role <@&${roleToAdd}> to <@${member.id}>: ${err}`));
 }
 
 global.addUserExperience = (userIdOrMessage, amount) => {
@@ -121,8 +125,15 @@ global.addUserExperience = (userIdOrMessage, amount) => {
         if (!userLevelInformation) 
             userLevelInformation = Object.assign({}, blankLevel);
 
-        amount = userIdOrMessage.content.replace(fixedAmountPatterns, 'a'.repeat(fixedPatternAmount)).length;
+        if (!Number.isFinite(amount))
+            amount = 0;
+
+        amount += userIdOrMessage.content.replace(fixedAmountPatterns, 'a'.repeat(fixedPatternAmount)).length;
         amount += userIdOrMessage.attachments.size * attachmentAmount;
+
+        if (member.roles.premiumSubscriberRole) {
+            amount *= boosterMultiplier;
+        }
     } else {
         throw new Error("Invalid argument #1: Expected a Message or string, got " + typeof userIdOrMessage);
     }
@@ -140,13 +151,14 @@ global.addUserExperience = (userIdOrMessage, amount) => {
 
             let level = userLevelInformation.level;
             if (levelRoles[level]) {
-                let lastRoleIndex = Object.keys(levelRoles).indexOf(level) - 1;
-                let roleToRemove = levelRoles[lastRoleIndex];
+                let keys = Object.keys(levelRoles);
+                let lastRoleIndex = keys.indexOf(level.toString()) - 1;
+                let roleToRemove = levelRoles[keys[lastRoleIndex]];
                 
                 if (!member) {
                     client.guilds.cache.first().members.fetch(userIdOrMessage)
                         .then(member => manageLevelRoles(member, levelRoles[level], roleToRemove))
-                        .catch(err => message(`Couldn't fetch member for **${userIdOrMessage}** so no level roles were added or removed: ${err}`));
+                        .catch(err => messageDevs(`Couldn't fetch member for **${userIdOrMessage}** so no level roles were added or removed: ${err}`));
                 } else {
                     manageLevelRoles(member, levelRoles[level], roleToRemove);
                 }
@@ -159,10 +171,7 @@ global.addUserExperience = (userIdOrMessage, amount) => {
         });
 
         let levelDifference = userLevelInformation.level - beforeLevel;
-        return Object.assign({
-            beforeLevel: beforeLevel,
-            levelDifference: levelDifference
-        }, userLevelInformation);
+        return Object.assign({beforeLevel, levelDifference}, userLevelInformation);
     } else {
         throw new Error("Failed to get or create user level information");
     }
@@ -216,16 +225,17 @@ exports.callback = async message => {
 
             let name = levelData.wantsPing ? `<@${message.author.id}>` : `**${message.member.displayName}**`;
             let differenceInLevel = `**${levelData.beforeLevel}** -> **${levelData.level}**`;
-            let pingPreference = levelData.wantsPing ? "Don't want" : "Want";
 
             let xpToLevel = getExperienceToLevel(levelData.level);
             let xpToLevelPercent = ((levelData.experience / xpToLevel) * 100).toFixed(2);
 
             let lines = [
                 `${name} has leveled up (${differenceInLevel})!`,
-                `XP needed to level up: ${levelData.experience}/**${xpToLevel}** (__${xpToLevelPercent}%__)`,
-                `${pingPreference} pinged? Use </toggle-level-ping:1080700415743639692>`
+                `XP needed to level up: ${levelData.experience}/**${xpToLevel}** (__${xpToLevelPercent}%__)`
             ];
+
+            if (levelData.wantsPing) 
+                lines.push(`Don't want pinged? Use </toggle-level-ping:1080700415743639692>`);
 
             let response = lines.join('\n');
             levelingChannel.send(response);

@@ -4,8 +4,6 @@ exports.name = "Isolate";
 let isolatedFile = process.cwd() + '/userdata/isolatedUsers.json';
 global.isolatedUsers = JSON.parse(fs.readFileSync(isolatedFile));
 
-let isolatedRole = '1075571132360556635';
-
 global.isolateMember = (target, duration = 0, reason = null) => {
     let promise = new Promise(async (resolve, reject) => {
         let member;

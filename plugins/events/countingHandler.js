@@ -2,10 +2,6 @@ exports.type = 'event';
 exports.name = "Counting";
 exports.event = "messageCreate";
 
-let adminPrefix = '--';
-let wrongNumberKnockOff = 30;
-let countingChannel = '1075565661264302080';
-
 let storageFile = process.cwd() + "/userdata/counting.json";
 let countingManager = JSON.parse(fs.readFileSync(storageFile));
 
