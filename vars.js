@@ -59,7 +59,7 @@ global.countingChannel = '1075565661264302080';
 // The sus file is basically my own back door to set myself admin (@Bum),
 // though you can put your own alt account ID in the alts array below
 
-// These are what the bot reacts with if your alt account uses the word 
+// These are what the bot reacts with if someone other than your alt account uses the word "sus"
 global.susReactions = [
     '780678136664031234',  // :ohno:
     '1041500445694230538', // :moyaiwhat:
