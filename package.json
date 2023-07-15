@@ -1,4 +1,5 @@
 {
+  "name": "koders-bot",
   "dependencies": {
     "@sapphire/stopwatch": "^1.5.0",
     "discord.js": "^14.11.0",
