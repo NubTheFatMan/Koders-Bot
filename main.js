@@ -1,3 +1,5 @@
+console.log("Initializing...");
+
 global.Stopwatch = require('@sapphire/stopwatch').Stopwatch;
 
 global.startWatch = new Stopwatch();
@@ -7,6 +9,7 @@ global.Discord = require('discord.js');
 global.fs      = require('fs');
 
 require('dotenv').config();
+console.log("NPM dependencies loaded and .env loaded.");
 
 let intents = Discord.GatewayIntentBits;
 global.client = new Discord.Client({
@@ -30,6 +33,7 @@ global.loadFile = file => {
         delete require.cache[require.resolve(file)];
     }
 
+    console.log(`Requiring file: ${file}`);
     let plugin = require(file);
     if (!plugin.name) plugin.name = file;
     if (plugin.type === 'command') {
@@ -65,12 +69,17 @@ global.requireAll = dir => {
 }
 
 require('./vars.js'); // This takes priority before any plugins
+console.log('Loaded vars.js')
 
+console.log('Loading plugin files...');
 requireAll('./plugins');
+console.log('Plugin files loaded.');
 
 refreshEvents();
+console.log("Event listers are listening.");
 
 client.login();
+console.log("Logging in client...");
 
 global.isRestarting = false;
 global.kodersRestart = () => {
