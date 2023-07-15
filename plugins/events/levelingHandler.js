@@ -2,27 +2,9 @@ exports.type = 'event';
 exports.name = "Leveling Handler";
 exports.event = "messageCreate";
 
-// Channel where levelups are posted
-let levelingAnnouncementChannel = '1077774360452014111';
-
-let cooldown = 1000; // ms between messages to count xp
-let minimumMessageLength = 0; // How long messages should be to count XP
-
-// If these are in a message, they are limited and give a fixed amount of XP
-// Currently limits mentions, emojis, dynamic timestamps, and links
-let fixedAmountPatterns = /(<((@(!|&)?|#)[0-9]+|a?:.+:[0-9]+|t:[0-9]+(:\w)?)>|https?:\/\/\S+)/g;
-
-let fixedPatternAmount  = 10; // Patterns matched above will add this amount of XP
-let attachmentAmount    = 15; // Attachments to a message will add this amount of XP
-
-let boosterMultiplier = 1.4; // Multiple the XP gained by this amount of the member is a server booster
-
-// Maximum level. Currently set to the level before experienceNeededToLevel would roll over on 32 bit
-let maxLevel = 1089; 
-
 global.blankLevel = {
     level: 0,
-    experiencedNeededToLevel: 100,
+    experiencedNeededToLevel: 100, //Typo that I'm too lazy to fix, "experience" shouldn't be past tense :moyai:
     experience: 0,
     totalExperience: 0,
     lastMessageTimestamp: 0,
@@ -31,17 +13,6 @@ global.blankLevel = {
 
 global.levelsDirectory = process.cwd() + '/userdata/levels';
 global.userLevels = new Map();
-
-global.levelRoles = {};
-levelRoles[ 1] = '1077793696633847858';
-levelRoles[ 5] = '1077794221009948712';
-levelRoles[10] = '1077794718357929995';
-levelRoles[15] = '1077795203768909844';
-levelRoles[20] = '1077795466370089052';
-levelRoles[25] = '1077795704505905202';
-levelRoles[30] = '1077795804955295875';
-levelRoles[37] = '1077795941400199301';
-levelRoles[60] = '1077796218954072114';
 
 // TODO: Switch to a cache system where it only loads if the user is actively chatting and
 // unloads after a while when they stop chatting

@@ -3,6 +3,7 @@ global.Case = class Case {
     static cacheSize = 50;
     static directory = process.cwd() + '/userdata/cases';
     static channelId = caseChannelID;
+    static nextCaseNumber = 1;
 
     static types = { 
         kick: 0,
@@ -29,7 +30,11 @@ global.Case = class Case {
         if (!Object.values(this.constructor.types).includes(options.type))
             throw new Error("Invalid 'type' number. See Case.types");
 
-        this.number = typeof options.number == "number" && Number.isFinite(options.number) ? options.number : NaN;
+        this.number = typeof options.number == "number" && Number.isFinite(options.number) ? options.number : this.constructor.nextCaseNumber;
+
+        if (this.number == this.constructor.nextCaseNumber) 
+            this.constructor.nextCaseNumber++;
+            // this.constructor.generateNextCaseNumber();
 
         this.type = options.type;
 
@@ -48,23 +53,11 @@ global.Case = class Case {
         this.messageId = typeof options.messageId === "string" ? options.messageId : null;
     }
 
-    // TODO: Make compatible with partially integrated cache system
-    generateCaseNumber() {
-        let highestIndex = 0;
-        this.constructor.entries.forEach(caseEntry => {
-            if (caseEntry.number > highestIndex)
-                highestIndex = caseEntry.number;
-        });
-        this.number = highestIndex + 1;
-    }
-
     toString() {
         return JSON.stringify(this);
     }
 
     saveEntry() {
-        if (Number.isNaN(this.number))
-            this.generateCaseNumber();
         this.constructor.entries.set(this.number, this);
     }
 
@@ -228,19 +221,35 @@ global.Case = class Case {
             resolve((new this(caseData)).saveEntry());
         });
     }
+
+    static generateNextCaseNumber() {
+        let fileNames = fs.readdirSync(this.directory);
+        for (let fileName of fileNames) {
+            if (fileName.endsWith('.json')) 
+                this.nextCaseNumber = Math.max(this.nextCaseNumber, Number(fileName.substring(0, fileName.indexOf("."))) + 1);
+        }
+
+        this.entries.forEach(caseEntry => {
+            // if (caseEntry.number >= this.nextCaseNumber)
+            //     this.nextCaseNumber = caseEntry.number + 1;
+            this.nextCaseNumber = Math.max(this.nextCaseNumber, caseEntry.number + 1)
+        });
+    }
 }
 
+Case.generateNextCaseNumber();
 
 // Populating Case.entries on startup
 // let fileNames = fs.readdirSync(Case.directory);
 // for (let fileName of fileNames) {
 //     if (fileName.endsWith('.json')) {
-//         fs.readFile(Case.directory + '/' + fileName, (err, contents) => {
-//             if (err) return console.error(err.stack);
+//         // fs.readFile(Case.directory + '/' + fileName, (err, contents) => {
+//         //     if (err) return console.error(err.stack);
             
-//             let options = JSON.parse(contents);
-//             let caseEntry = new Case(options);
-//             caseEntry.saveEntry();
-//         });
+//         //     let options = JSON.parse(contents);
+//         //     let caseEntry = new Case(options);
+//         //     caseEntry.saveEntry();
+//         // });
+//         Case.nextCaseNumber = Math.max(Case.nextCaseNumber, Number(fileName.substring(0, fileName.indexOf("."))) + 1);
 //     }
 // }
