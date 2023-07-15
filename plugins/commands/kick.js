@@ -1,64 +1,6 @@
 exports.type = "command";
 exports.name = "Kick";
 
-// ~kick is no longer supported, doesn't have case manager integration
-// exports.calls = ["kick"];
-// exports.callback = async (message, args) => {
-//     if (!message.member.permissions.has(Discord.PermissionsBitField.Flags.KickMembers))
-//         return message.reply("You don't have access to kicking.");
-
-//     if (message.mentions.members.size === 0) 
-//         return message.reply('You must specify at least one person to kick');
-
-//     if (message.mentions.members.size > 3)
-//         return message.reply("You are limited to kicking 3 people at a time.");
-
-//     let callerPower = message.member.roles.highest.position;
-
-//     let kickable = [];
-//     let mentionIds = [];
-//     message.mentions.members.forEach(target => {
-//         if (target.roles.highest.position < callerPower && target.kickable && !kickable.includes(target)) {
-//             kickable.push(target);
-//             mentionIds.push(target.id);
-//         }
-//     });
-
-//     if (kickable.length === 0) 
-//         return message.reply('Out of the targets you specified, you are unable to kick any of them.');
-
-//     let reason = message.content.substring(message.content.indexOf(args[0]))
-//         .replace(new RegExp(`(<@${mentionIds.join('>)|(<@')}>)`), '')
-//         .trim()
-//         .substring(0, 512); // Can be up to 512 characters long.
-
-//     if (reason === "")
-//         reason = `No reason provided by ${message.member.displayName}.`;
-
-//     let response = await message.reply(`Kicking **${kickable.length}** member${kickable.length === 1 ? '' : 's'}...\nReason: ${reason}`);
-
-//     let failedToDm = [];
-//     for (let target of kickable) {
-//         try {
-//             await target.send(`You have been kicked from Koders for the following reason:\n${reason}`);
-//         } catch (error) {
-//             failedToDm.push(target.displayName);
-//         }
-//         await target.kick(reason);
-//     }
-
-//     let newReponseLines = [
-//         `Kicked **${kickable.length}** member${kickable.length === 1 ? '' : 's'}.`,
-//         `Reason: ${reason}`
-//     ];
-
-//     if (failedToDm.length > 0) {
-//         newReponseLines.push(`\nFailed to DM **${failedToDm.join('**, **')}**.`);
-//     }
-
-//     response.edit(newReponseLines.join('\n'));
-// }
-
 exports.commandObject = {
     name: "kick",
     description: "Kick a member. It is recommended you use /isolate instead, however this is available to you.",
@@ -131,3 +73,61 @@ exports.interactionCallback = interaction => {
         interaction.editReply(response);
     });
 }
+
+// ~kick is no longer supported, doesn't have case manager integration
+// exports.calls = ["kick"];
+// exports.callback = async (message, args) => {
+//     if (!message.member.permissions.has(Discord.PermissionsBitField.Flags.KickMembers))
+//         return message.reply("You don't have access to kicking.");
+
+//     if (message.mentions.members.size === 0) 
+//         return message.reply('You must specify at least one person to kick');
+
+//     if (message.mentions.members.size > 3)
+//         return message.reply("You are limited to kicking 3 people at a time.");
+
+//     let callerPower = message.member.roles.highest.position;
+
+//     let kickable = [];
+//     let mentionIds = [];
+//     message.mentions.members.forEach(target => {
+//         if (target.roles.highest.position < callerPower && target.kickable && !kickable.includes(target)) {
+//             kickable.push(target);
+//             mentionIds.push(target.id);
+//         }
+//     });
+
+//     if (kickable.length === 0) 
+//         return message.reply('Out of the targets you specified, you are unable to kick any of them.');
+
+//     let reason = message.content.substring(message.content.indexOf(args[0]))
+//         .replace(new RegExp(`(<@${mentionIds.join('>)|(<@')}>)`), '')
+//         .trim()
+//         .substring(0, 512); // Can be up to 512 characters long.
+
+//     if (reason === "")
+//         reason = `No reason provided by ${message.member.displayName}.`;
+
+//     let response = await message.reply(`Kicking **${kickable.length}** member${kickable.length === 1 ? '' : 's'}...\nReason: ${reason}`);
+
+//     let failedToDm = [];
+//     for (let target of kickable) {
+//         try {
+//             await target.send(`You have been kicked from Koders for the following reason:\n${reason}`);
+//         } catch (error) {
+//             failedToDm.push(target.displayName);
+//         }
+//         await target.kick(reason);
+//     }
+
+//     let newReponseLines = [
+//         `Kicked **${kickable.length}** member${kickable.length === 1 ? '' : 's'}.`,
+//         `Reason: ${reason}`
+//     ];
+
+//     if (failedToDm.length > 0) {
+//         newReponseLines.push(`\nFailed to DM **${failedToDm.join('**, **')}**.`);
+//     }
+
+//     response.edit(newReponseLines.join('\n'));
+// }
