@@ -25,5 +25,5 @@ exports.callback = member => {
                 }
             }
         })
-        .catch(err => messageDevs(`Unable to ban member <@${member.id}> (${member.id}) who left while in isolation.`));
+        .catch(err => messageDevs(`Unable to ban member <@${member.id}> (${member.id}) who left while in isolation: \`${err}\``));
 }
