@@ -98,7 +98,7 @@ exports.interactionCallback = async interaction => {
 
                 if (Number.isFinite(banEntry.unbanTimestamp)) {
                     messageLines.push(`This is a __${formatTime(duration)}__ ban and you will be able to rejoin at <t:${Math.round(banEntry.unbanTimestamp / 1000)}:f>`);
-                    messageLines.push(`If you wish to rejoin at that time, here is an invite: https://nubstoys.xyz/koders`);
+                    messageLines.push(`If you wish to rejoin at that time, here is an invite: https://discord.gg/9scamAc3vw`);
                 } else {
                     messageLines.push(`This is a __permanent__ ban and you will not be able to rejoin.`);
                 }
