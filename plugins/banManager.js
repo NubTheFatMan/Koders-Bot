@@ -49,7 +49,8 @@ class Ban {
             let caseOptions = {
                 type: Case.types.ban,
                 targets: [this.memberId],
-                reason: this.reason
+                reason: this.reason,
+                expires: this.unbanTimestamp || 0
             }
 
             if (typeof options?.enforcer === "string") 

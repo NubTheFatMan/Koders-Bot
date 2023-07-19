@@ -41,6 +41,8 @@ global.Case = class Case {
         this.enforcers = options.enforcers instanceof Array ? options.enforcers : [];
         this.targets   = options.targets   instanceof Array ? options.targets   : [];
 
+        this.expires   = typeof options.expires == "number" && Number.isFinite(options.expires) ? options.expires : 0;
+
         // this.createdTimestamp = typeof options.createdTimestamp === "string" ? options.createdTimestamp : Date.now();
         this.createdTimestamp = NaN;
         if (typeof options.createdTimestamp === "string")
@@ -154,8 +156,13 @@ global.Case = class Case {
         embed.addFields(
             {name: `Affected Member${this.targets.length !== 1 ? 's' : ''}`, value: this.targets.length > 0 ? `<@${this.targets.join('>, <@')}>` : 'No one has been listed.'},
             {name: 'Enforced By', value: this.enforcers.length > 0 ? `<@${this.enforcers.join('>, <@')}>` : 'No one has been listed.'},
-            {name: 'Enforced On', value: `<t:${enforcedOn}:f> (<t:${enforcedOn}:R>)`}
+            {name: 'Enforced On', value: `<t:${enforcedOn}:f> (<t:${enforcedOn}:R>)`, inline: true}
         );
+
+        if (this.expires > 0) {
+            let expires = Math.round(this.expires / 1000);
+            embed.addFields({name: 'Expires On', value: `<t:${expires}:f> (<t:${expires}:R>)`, inline: true});
+        }
 
         return embed;
     }
