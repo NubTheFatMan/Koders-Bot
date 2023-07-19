@@ -84,8 +84,8 @@ exports.interactionCallback = async interaction => {
     }
 
     let reason = interaction.options.getString("reason");
-    interaction.reply({content: `Banning **${target.displayName}**...`, ephemeral: interaction.options.getBoolean("silent") ? true : false}).then(async () => {
-        let banEntry = new Ban(target, {reason: reason, duration: duration, createdTimestamp: interaction.createdTimestamp, enforcer: interaction.member.id});
+    interaction.reply({content: `Banning **${member.displayName}**...`, ephemeral: interaction.options.getBoolean("silent") ? true : false}).then(async () => {
+        let banEntry = new Ban(member, {reason: reason, duration: duration, createdTimestamp: interaction.createdTimestamp, enforcer: interaction.member.id});
 
         let failedToDm = false;
         if (member) {
@@ -109,20 +109,20 @@ exports.interactionCallback = async interaction => {
             }
         }
 
-        let banOptions = {reason: reason, days: interaction.options.getBoolean("keep-messages") ? 0 : 7}
+        let banOptions = {reason: reason, deleteMessageSeconds: interaction.options.getBoolean("keep-messages") ? 604800 : 0}
         try {
             if (member) {
                 await member.ban(banOptions);
             } else {
                 await interaction.guild.bans.create(id, banOptions)
             }
-            ban.save();
+            banEntry.save();
 
-            let response = `Banned **${target.displayName}**.`;
+            let response = `Banned **${member.displayName}**.`;
             if (failedToDm) response += " Unable to DM them, either not on server or DMs are disabled.";
             interaction.editReply(response);
         } catch (err) {
-            interaction.editReply(`Unable to complete ban: ${err}`)
+            interaction.editReply(`Unable to complete ban: ${err}`);
         }
     });
 }
