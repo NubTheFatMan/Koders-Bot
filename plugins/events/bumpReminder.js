@@ -60,9 +60,9 @@ setInterval(async () => {
 
             if (bumpChannel) {
                 if (initialBumpReminder) 
-                    bumpChannel.send(`<@&${bumpRoleId}> it's time to bump the server again!`);
+                    bumpChannel.send(`<@&${bumpRoleId}> it's time to </bump:947088344167366698> the server again!`);
                 else 
-                    bumpChannel.send(`<@&${bumpRoleId}> still needs bumped!`);
+                    bumpChannel.send(`<@&${bumpRoleId}> the server still needs </bump:947088344167366698>ed!`);
                 
                 initialBumpReminder = false;
                 nextBumpTimestamp += 60_000 * 60;
