@@ -19,6 +19,7 @@ global.client = new Discord.Client({
         intents.GuildBans,
         intents.GuildMessages,
         intents.GuildMessageReactions,
+        intents.GuildModeration,
         intents.MessageContent
     ]
 });
@@ -35,6 +36,7 @@ global.loadFile = file => {
 
     console.log(`Requiring file: ${file}`);
     let plugin = require(file);
+    plugin.file = file;
     if (!plugin.name) plugin.name = file;
     if (plugin.type === 'command') {
         if (plugin.calls instanceof Array && plugin.callback) {
@@ -45,10 +47,19 @@ global.loadFile = file => {
             slashCommands.set(plugin.commandObject.name, plugin);
         }
     } else if (plugin.type === 'event') {
-        plugin.file = file;
         eventHandlers.set(plugin.name, plugin);
     }
-    plugins.set(file, plugin);
+
+    if (plugin.events instanceof Array) {
+        for (let i = 0; i < plugin.events.length; i++) {
+            let ev = plugin.events[i];
+            if (typeof ev.event == "string" && ev.callback instanceof Function) {
+                eventHandlers.set(`${plugin.name}.event.${ev.event}.${i}`, ev);
+            }
+        }
+    }
+
+    plugins.set(plugin.name, plugin);
 
     return plugin;
 }
@@ -94,7 +105,7 @@ process.on('uncaughtException', (error, origin) => {
     // safely save all files before actually terminating the process (preventing corrupting any .json mid-save)
 
     // Used to make sure a message is sent to the dev channel at least before a restart
-    let devMessagePromise = messageDevs(`An exception wasn't caught. Since part of the bot may be corrupted, saving all json files and restarting.`);
+    let devMessagePromise = messageDevs(`An exception wasn't caught. Since part of the bot may be corrupted, saving all json files and restarting.\`\`\`\n${error.stack}\`\`\``);
     if (devMessagePromise) {
         devMessagePromise.then(kodersRestart)
     } else {
