@@ -11,6 +11,25 @@ global.fs      = require('fs');
 require('dotenv').config();
 console.log("NPM dependencies loaded and .env loaded.");
 
+// This is highly *NOT* recommended, however I'm not going to sit around and wait for djs to fix their code
+Discord.User.prototype.__Koders_InjectPatch = Discord.User.prototype._patch;
+Discord.User.prototype._patch = function (data) {
+    this.__Koders_InjectPatch(data);
+
+    if ('global_name' in data) {
+        this.globalName = data.global_name;
+    } else {
+        this.globalName ??= null;
+    }
+}
+Object.defineProperty(Discord.User.prototype, "displayName", {
+    get: function displayName() {return this.globalName ?? this.username;}
+});
+Object.defineProperty(Discord.GuildMember.prototype, "displayName", {
+    get: function displayName() {return this.nickname ?? this.user.displayName;}
+});
+console.log('Injected discord user display name fix into discord.js 🗿');
+
 let intents = Discord.GatewayIntentBits;
 global.client = new Discord.Client({
     intents: [
@@ -99,10 +118,12 @@ global.kodersRestart = () => {
 
 process.on('unhandledRejection', (reason, promise) => {
     messageDevs(`A promise wasn't handled with a \`.catch()\`.\`\`\`\n${reason.stack}\`\`\``);
+    console.error(reason);
 });
 process.on('uncaughtException', (error, origin) => {
     // Since an error occured, send a message to the dev channel and 
     // safely save all files before actually terminating the process (preventing corrupting any .json mid-save)
+    console.error(error);
 
     // Used to make sure a message is sent to the dev channel at least before a restart
     let devMessagePromise = messageDevs(`An exception wasn't caught. Since part of the bot may be corrupted, saving all json files and restarting.\`\`\`\n${error.stack}\`\`\``);
