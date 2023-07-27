@@ -17,8 +17,14 @@ global.isolateMember = (target, duration = 0, reason = null) => {
                 let isolation = {
                     userid: member.id,
                     reason: reason,
-                    roles: Array.from(member.roles.cache.keys())
+                    // roles: Array.from(member.roles.cache.keys())
+                    roles: []
                 }
+
+                member.roles.cache.forEach(role => {
+                    if (!role.managed)
+                        isolation.roles.push(role.id);
+                });
             
                 if (!Number.isNaN(duration) && Number.isFinite(duration) && duration > 0) {
                     isolation.endTime = Date.now() + duration;
