@@ -10,14 +10,18 @@ global.Case = class Case {
         ban: 1,
         warn: 2,
         isolation: 3,
-        custom: 4
+        custom: 4,
+        timeout: 5,
+        unban: 6
     }
     static typeColors = [
         0x3eff3e,
         0xff3e3e,
         0xffff3e,
         0x3effff,
-        0x3e3e3e
+        0x3e3e3e,
+        0x3e86ff,
+        0x3eff7c
     ]
 
     constructor (options) {
