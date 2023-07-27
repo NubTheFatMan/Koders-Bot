@@ -48,6 +48,44 @@ global.slashCommands = new Map();
 global.eventHandlers = new Map();
 global.plugins = new Map();
 
+global.registerPlugin = plugin => {
+    if (typeof plugin.name !== "string") 
+        throw new Error("Plugin must be named");
+
+    plugins.set(plugin.name, plugin);
+    console.log(`Registered plugin "${plugin.name}"`);
+
+    switch(plugin.type) {
+        case "command": {
+            if (plugin.calls instanceof Array && plugin.callback instanceof Function) {
+                commands.set(plugin.name, plugin);
+                console.log(`Registered text command "${plugin.name}"`);
+            }
+
+            if (typeof plugin.commandObject?.name == "string" && plugin.interactionCallback instanceof Function) {
+                slashCommands.set(plugin.commandObject.name, plugin);
+                console.log(`Registered slash command "/${plugin.commandObject.name}"`);
+            }
+        } break;
+
+        case "event": {
+            if (typeof plugin.event == "string" && plugin.callback instanceof Function) {
+                eventHandlers.set(plugin.name, plugin);
+                console.log(`Registered event (${plugin.event}) "${plugin.name}"`);
+            }
+        }
+    }
+
+    if (plugin.subPlugins instanceof Array) {
+        for (let i = 0; i < plugin.subPlugins.length; i++) {
+            let sub = plugin.subPlugins[i];
+            if (!sub.name)
+                sub.name = `${plugin.name}.sub.${i}`;
+            registerPlugin(sub);
+        }
+    }
+}
+
 global.loadFile = file => {
     if (require.cache[require.resolve(file)]) {
         delete require.cache[require.resolve(file)];
@@ -57,31 +95,53 @@ global.loadFile = file => {
     let plugin = require(file);
     plugin.file = file;
     if (!plugin.name) plugin.name = file;
-    if (plugin.type === 'command') {
-        if (plugin.calls instanceof Array && plugin.callback) {
-            commands.set(plugin.name, plugin);
-        }
-
-        if (plugin.commandObject?.name && plugin.interactionCallback) {
-            slashCommands.set(plugin.commandObject.name, plugin);
-        }
-    } else if (plugin.type === 'event') {
-        eventHandlers.set(plugin.name, plugin);
-    }
-
-    if (plugin.events instanceof Array) {
-        for (let i = 0; i < plugin.events.length; i++) {
-            let ev = plugin.events[i];
-            if (typeof ev.event == "string" && ev.callback instanceof Function) {
-                eventHandlers.set(`${plugin.name}.event.${ev.event}.${i}`, ev);
-            }
-        }
-    }
-
-    plugins.set(plugin.name, plugin);
+    registerPlugin(plugin);
 
     return plugin;
 }
+
+// global.loadFile = file => {
+//     if (require.cache[require.resolve(file)]) {
+//         delete require.cache[require.resolve(file)];
+//     }
+
+//     console.log(`Requiring file: ${file}`);
+//     let plugin = require(file);
+//     plugin.file = file;
+//     if (!plugin.name) plugin.name = file;
+//     if (plugin.type === 'command') {
+//         if (plugin.calls instanceof Array && plugin.callback instanceof Function) {
+//             commands.set(plugin.name, plugin);
+//             console.log(`Text command registered: "${plugin.name}"`);
+//         }
+
+//         if (typeof plugin.commandObject?.name == "string" && plugin.interactionCallback instanceof Function) {
+//             slashCommands.set(plugin.commandObject.name, plugin);
+//             console.log(`Slash command registered: "${plugin.name}"`);
+//         }
+        
+//     } else if (plugin.type === 'event' && typeof plugin.event == "string" && plugin.callback instanceof Function) {
+//         eventHandlers.set(plugin.name, plugin);
+//         console.log(`Event (${plugin.event}) registered: "${plugin.name}"`);
+//     }
+
+//     let subPluginCount = 0;
+//     if (plugin.subPlugins instanceof Array) {
+//         for (let i = 0; i < plugin.subPlugins.length; i++) {
+//             let subPlugin = plugin.subPlugins[i];
+//             if (subPlugin.type == "event" && typeof subPlugin.event == "string" && subPlugin.callback instanceof Function) {
+//                 eventHandlers.set(`${plugin.name}.event.${i}`, ev);
+//                 subPluginCount++;
+//             }
+//         }
+//     }
+//     if (subPluginCount > 0)
+//         console.log(`Registered ${subPluginCount} sub plugin(s).`);
+
+//     plugins.set(plugin.name, plugin);
+
+//     return plugin;
+// }
 
 global.requireAll = dir => {
     let plugins = [];
@@ -102,8 +162,9 @@ require('./vars.js'); // This takes priority before any plugins
 console.log('Loaded vars.js')
 
 console.log('Loading plugin files...');
-requireAll('./plugins');
-console.log('Plugin files loaded.');
+let loadedPlugins = requireAll('./plugins');
+console.log(`Loaded ${loadedPlugins.length} plugins.`);
+// console.log('Plugin files loaded.');
 
 refreshEvents();
 console.log("Event listers are listening.");
