@@ -65,12 +65,25 @@ exports.interactionCallback = interaction => {
             reason: reason, 
             enforcers: [interaction.member.id]
         });
-        await caseInstance.updateMessage();
+        caseInstance.updateMessage();
         
         let response = `Kicked **${target.displayName}**.`;
         if (failedToDm) response += " Failed to DM them.";
         if (Number.isFinite(caseInstance.number)) response += ` Generated case #**${caseInstance.number}**.`;
         interaction.editReply(response);
+
+        let loggingSystem = plugins.get("Logging System");
+        if (loggingSystem) {
+            loggingSystem.fetchLogChannel("modLogs").then(channel => {
+                let embed = new Discord.EmbedBuilder()
+                    .setTitle("Member Kicked")
+                    .setDescription(`Enforcing kick by <@${interaction.user.id}> on **${target.displayName}**`)
+                    .setColor(0xffff3e)
+                    .setTimestamp()
+                    .addFields({name: "Reason:", value: reason ?? "No reason provided."});
+                channel.send({embeds: [embed]});
+            });
+        }
     });
 }
 

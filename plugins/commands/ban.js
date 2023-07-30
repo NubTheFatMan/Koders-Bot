@@ -61,15 +61,17 @@ exports.interactionCallback = async interaction => {
     if (!member) {
         try {
             member = await interaction.guild.members.fetch(id);
-            
-            if (member.roles.highest.position >= interaction.member.roles.highest.position) {
-                return interaction.reply({content: "Target member has higher or equal power to you.", ephemeral: true});
-            }
-        
-            if (!member.bannable) {
-                return interaction.reply({content: `Unable to ban this member.`, ephemeral: true});
-            }
         } finally {} // who needs error handling 🗿
+    }
+
+    if (member) {
+        if (member.roles.highest.position >= interaction.member.roles.highest.position && member.roles.highest !== isolatedRole) {
+            return interaction.reply({content: "Target member has higher or equal power to you.", ephemeral: true});
+        }
+    
+        if (!member.bannable) {
+            return interaction.reply({content: `Unable to ban this member.`, ephemeral: true});
+        }
     }
 
     let duration;
@@ -121,6 +123,26 @@ exports.interactionCallback = async interaction => {
             let response = `Banned **${member.displayName}**.`;
             if (failedToDm) response += " Unable to DM them, either not on server or DMs are disabled.";
             interaction.editReply(response);
+
+            let loggingSystem = plugins.get("Logging System");
+            if (loggingSystem) {
+                loggingSystem.fetchLogChannel("modLogs").then(channel => {
+                    let fields = [{name: "Reason:", value: reason ?? "No reason provided."}];
+
+                    if (Number.isFinite(banEntry.unbanTimestamp)) {
+                        let time = Math.round(banEntry.unbanTimestamp / 1000);
+                        fields.push({name: "Unban on:", value: `<t:${time}:f> (<t:${time}:R>)`});
+                    }
+
+                    let embed = new Discord.EmbedBuilder()
+                        .setTitle("Member Banned")
+                        .setDescription(`Enforcing ban by <@${interaction.user.id}> on **${member.displayName}**`)
+                        .setColor(0xff0000)
+                        .setTimestamp()
+                        .addFields(...fields);
+                    channel.send({embeds: [embed]});
+                });
+            }
         } catch (err) {
             interaction.editReply(`Unable to complete ban: ${err}`);
         }
