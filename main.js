@@ -48,30 +48,36 @@ global.slashCommands = new Map();
 global.eventHandlers = new Map();
 global.plugins = new Map();
 
-global.registerPlugin = plugin => {
+let spacer = ' -> ';
+global.registerPlugin = (plugin, nest = 1) => {
     if (typeof plugin.name !== "string") 
         throw new Error("Plugin must be named");
 
+    if (typeof nest !== "number")
+        throw new Error("Nest must be a number")
+
+    let nestSpacer = spacer.repeat(nest);
+
     plugins.set(plugin.name, plugin);
-    console.log(`Registered plugin "${plugin.name}"`);
+    console.log(`${nestSpacer}Registered plugin "${plugin.name}"`);
 
     switch(plugin.type) {
         case "command": {
             if (plugin.calls instanceof Array && plugin.callback instanceof Function) {
                 commands.set(plugin.name, plugin);
-                console.log(`Registered text command "${plugin.name}"`);
+                console.log(`${nestSpacer}  - Registered text command with calls: ~${plugin.calls.join(', ~')}`);
             }
 
             if (typeof plugin.commandObject?.name == "string" && plugin.interactionCallback instanceof Function) {
                 slashCommands.set(plugin.commandObject.name, plugin);
-                console.log(`Registered slash command "/${plugin.commandObject.name}"`);
+                console.log(`${nestSpacer}  - Registered slash command "/${plugin.commandObject.name}"`);
             }
         } break;
 
         case "event": {
             if (typeof plugin.event == "string" && plugin.callback instanceof Function) {
                 eventHandlers.set(plugin.name, plugin);
-                console.log(`Registered event (${plugin.event}) "${plugin.name}"`);
+                console.log(`${nestSpacer}  - Registered event listener on "${plugin.event}"`);
             }
         }
     }
@@ -81,7 +87,7 @@ global.registerPlugin = plugin => {
             let sub = plugin.subPlugins[i];
             if (!sub.name)
                 sub.name = `${plugin.name}.sub.${i}`;
-            registerPlugin(sub);
+            registerPlugin(sub, nest + 1);
         }
     }
 }
@@ -144,26 +150,24 @@ global.loadFile = file => {
 // }
 
 global.requireAll = dir => {
-    let plugins = [];
     fs.readdirSync(dir).forEach(file => {
         let path = dir + '/' + file;
         if (fs.statSync(path).isDirectory()) {
-            plugins.push(...requireAll(path));
+            requireAll(path);
         } else {
             if (path.endsWith('.js')) {
-                plugins.push(loadFile(path));
+                loadFile(path);
             }
         }
     });
-    return plugins;
 }
 
 require('./vars.js'); // This takes priority before any plugins
 console.log('Loaded vars.js')
 
 console.log('Loading plugin files...');
-let loadedPlugins = requireAll('./plugins');
-console.log(`Loaded ${loadedPlugins.length} plugins.`);
+requireAll('./plugins');
+console.log(`Loaded ${plugins.size} plugins.`);
 // console.log('Plugin files loaded.');
 
 refreshEvents();
