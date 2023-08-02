@@ -27,9 +27,5 @@ exports.callback = () => {
         channel.send({embeds: [embed]});
     }
 
-    let apiSlashCommandInput = [];
-    slashCommands.forEach(plugin => {
-        apiSlashCommandInput.push(plugin.commandObject);
-    });
-    client.application.commands.set(apiSlashCommandInput);
+    client.application.commands.set(calculateSlashCommandsArray());
 }

@@ -15,3 +15,11 @@ global.refreshEvent = (ev) => {
         client.on(ev.event, ev.callback);
     }
 }
+
+global.calculateSlashCommandsArray = () => {
+    let apiSlashCommandInput = [];
+    slashCommands.forEach(plugin => {
+        apiSlashCommandInput.push(plugin.commandObject);
+    });
+    return apiSlashCommandInput;
+}
