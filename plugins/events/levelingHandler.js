@@ -154,6 +154,8 @@ let blankMessageCache = {
     messages: (new Array(50)).fill('')
 }
 
+exports.levelUpReaction = '1136371604339834901';
+
 let levelingChannel;
 exports.callback = async message => {
     if (client.user.id !== liveClientId) return; // Don't want to track leveling on dev clients
@@ -190,6 +192,7 @@ exports.callback = async message => {
         if (cache.currentIndex >= cache.messages.length) cache.currentIndex = 0;
 
         if (levelData.levelDifference > 0) {
+            message.react(this.levelUpReaction);
             if (!levelingChannel) {
                 levelingChannel = await client.guilds.cache.first().channels.fetch(levelingAnnouncementChannel);
             }
