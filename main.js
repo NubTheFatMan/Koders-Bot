@@ -166,7 +166,7 @@ require('./vars.js'); // This takes priority before any plugins
 console.log('Loaded vars.js')
 
 console.log('Loading plugin files...');
-requireAll('./plugins');
+requireAll(process.cwd() + '/plugins');
 console.log(`Loaded ${plugins.size} plugins.`);
 // console.log('Plugin files loaded.');
 
