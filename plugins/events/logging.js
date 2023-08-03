@@ -33,6 +33,7 @@ exports.subPlugins = [
         name: "Audit Log Monitoring",
         event: "guildAuditLogEntryCreate",
         callback: async audit => {
+            if (client.user.id !== liveClientId) return;
             let channel = await this.fetchLogChannel("modLogs");
             if (!channel) return;
 
@@ -142,6 +143,7 @@ exports.subPlugins = [
         name: "Log Message Deletions",
         event: "messageDelete",
         callback: async message => {
+            if (client.user.id !== liveClientId) return;
             let channel = await this.fetchLogChannel("messageLogs");
             if (!channel) return;
 
@@ -184,6 +186,7 @@ exports.subPlugins = [
         name: "Log Message Edits",
         event: "messageUpdate",
         callback: async (oldMessage, newMessage) => {
+            if (client.user.id !== liveClientId) return;
             if (oldMessage.content == newMessage.content) return;
             
             let channel = await this.fetchLogChannel("messageLogs");;
@@ -221,6 +224,7 @@ exports.subPlugins = [
         name: "Log Member Joining",
         event: "guildMemberAdd",
         callback: async member => {
+            if (client.user.id !== liveClientId) return;
             let channel = await this.fetchLogChannel("joinLogs");;
             if (!channel) return;
 
@@ -245,6 +249,7 @@ exports.subPlugins = [
         name: "Log Member Leaving",
         event: "guildMemberRemove",
         callback: async member => {
+            if (client.user.id !== liveClientId) return;
             let channel = await this.fetchLogChannel("joinLogs");;
             if (!channel) return;
 
