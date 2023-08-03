@@ -43,10 +43,12 @@ exports.callback = (message, args) => {
                 );
                 msgObj.content = `Evaluated without error.\n⏱️ Took \`${time}\``;
 
-                if (!msgObj.files) msgObj.files = [{attachment: buffer, name: "result.txt"}];
-                else msgObj.files.push({attachment: buffer, name: "result.txt"});
+                let name = "result." + result.startsWith('{') ? 'json' : 'txt';
+
+                if (!msgObj.files) msgObj.files = [{attachment: buffer, name: name}];
+                else msgObj.files.push({attachment: buffer, name: name});
             } else {
-                msgObj.content = `Evaluated without error.\n⏱️ Took \`${time}\`\n\`\`\`\n${result}\`\`\``;
+                msgObj.content = `Evaluated without error.\n⏱️ Took \`${time}\`\n\`\`\`${result.startsWith('{') ? 'json': ''}\n${result}\`\`\``;
             }
         }
 
