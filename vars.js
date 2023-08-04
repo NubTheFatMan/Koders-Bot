@@ -86,34 +86,3 @@ global.failedToRole = '1075228765950586920';
 
 // This is used in the case manager
 global.caseChannelID = "771529639054278696";
-
-
-// Leveling handler variables
-global.levelRoles = {};
-levelRoles[ 1] = '1077793696633847858'; // @Image Perms
-levelRoles[ 5] = '1077794221009948712'; // @New
-levelRoles[10] = '1077794718357929995'; // @Frequent
-levelRoles[15] = '1077795203768909844'; // @Regular
-levelRoles[20] = '1077795466370089052'; // @Active
-levelRoles[25] = '1077795704505905202'; // @Needs a break
-levelRoles[30] = '1077795804955295875'; // @Touching Grass
-levelRoles[37] = '1077795941400199301'; // @Godly
-levelRoles[60] = '1077796218954072114'; // @holy fuck
-
-// Channel where levelups are posted
-global.levelingAnnouncementChannel = '1077774360452014111';
-
-global.cooldown = 1000; // ms between messages to count xp. Also, this is a really bad global name, holy shit :)
-global.minimumMessageLength = 0; // How long messages should be to count XP
-
-// If these are in a message, they are limited and give a fixed amount of XP
-// Currently limits mentions, nitro emojis, dynamic timestamps, and links
-global.fixedAmountPatterns = /(<((@(!|&)?|#)[0-9]+|a?:.+:[0-9]+|t:[0-9]+(:\w)?)>|https?:\/\/\S+)/g;
-
-global.fixedPatternAmount  = 10; // Patterns matched above will add this amount of XP
-global.attachmentAmount    = 15; // Attachments to a message will add this amount of XP
-
-global.boosterMultiplier = 1.4; // Multiple the XP gained by this amount of the member is a server booster
-
-// Maximum level. Currently set to the level before experienceNeededToLevel would roll over on 32 bit
-global.maxLevel = 1089; 

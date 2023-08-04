@@ -2,58 +2,94 @@ exports.type = 'event';
 exports.name = "Leveling Handler";
 exports.event = "messageCreate";
 
-global.blankLevel = {
+exports.blankLevel = {
     level: 0,
     experiencedNeededToLevel: 100, //Typo that I'm too lazy to fix, "experience" shouldn't be past tense :moyai:
     experience: 0,
     totalExperience: 0,
     lastMessageTimestamp: 0,
-    wantsPing: true // User can set this false and the bot wont @ them upon leveling up
+    wantsPing: false // User can set this false and the bot wont @ them upon leveling up
 }
 
-global.levelsDirectory = process.cwd() + '/userdata/levels';
-global.userLevels = new Map();
+exports.levelUpReaction = '1136371604339834901';
 
-// TODO: Switch to a cache system where it only loads if the user is actively chatting and
-// unloads after a while when they stop chatting
-fs.readdir(levelsDirectory, (errorFolder, files) => {
-    if (errorFolder) throw errorFolder; // Not gonna error handle since this is important
+exports.levelRoles = {
+     1: '1077793696633847858', // @Image Perms
+     5: '1077794221009948712', // @New
+    10: '1077794718357929995', // @Frequent
+    15: '1077795203768909844', // @Regular
+    20: '1077795466370089052', // @Active
+    25: '1077795704505905202', // @Needs a break
+    30: '1077795804955295875', // @Touching Grass
+    37: '1077795941400199301', // @Godly
+    60: '1077796218954072114'  // @holy fuck
+};
 
-    for (let file of files) {
-        if (!file.endsWith('.json')) continue;
+// Channel where levelups are posted
+exports.levelingAnnouncementChannel = '1077774360452014111';
 
-        fs.readFile(levelsDirectory + '/' + file, (errorFile, contents) => {
-            if (errorFile) throw errorFile;
-            
-            let userid = file.substring(0, file.indexOf('.'));
-            userLevels.set(userid, JSON.parse(contents));
-        });
+exports.cooldown = 1000; // ms between messages to count xp
+exports.minimumMessageLength = 0; // How long messages should be to count XP
+
+// If these are in a message, they are limited and give a fixed amount of XP
+// Currently limits mentions, nitro emojis, dynamic timestamps, and links
+exports.fixedAmountPatterns = /(<((@(!|&)?|#)[0-9]+|a?:.+:[0-9]+|t:[0-9]+(:\w)?)>|https?:\/\/\S+)/g;
+
+exports.fixedPatternAmount  = 10; // Patterns matched above will add this amount of XP
+exports.attachmentAmount    = 15; // Attachments to a message will add this amount of XP
+
+exports.boosterMultiplier = 1.4; // Multiple the XP gained by this amount of the member is a server booster
+exports.globalXPMultiplier = 1;
+
+// Maximum level. Currently set to the level before experienceNeededToLevel would roll over on 32 bit
+exports.maxLevel = 1089; 
+
+exports.unloadTimeout = 1000 * 60 * 10; // How long until level information should be unloaded from memory after inactive chatting.
+
+exports.levelsDirectory = process.cwd() + '/userdata/levels/';
+exports.userLevels = new Map();
+exports.unloadLevelDataTimestamps = new Map();
+
+exports.getLevelInformation = id => {
+    if (typeof id !== "string") throw new Error("Invalid user id");
+    if (this.userLevels.get(id)) {
+        return this.userLevels.get(id);
+    } else if (fs.existsSync(this.levelsDirectory + `${id}.json`)) {
+        let levelInformation = JSON.parse(fs.readFileSync(this.levelsDirectory + `${id}.json`));
+        this.userLevels.set(id, levelInformation);
+        this.unloadLevelDataTimestamps.set(id, Date.now() + this.unloadTimeout);
+        return levelInformation;
     }
-});
+    
+    let newLevel = Object.assign({}, this.blankLevel);
+    this.userLevels.set(id, newLevel);
+    this.unloadLevelDataTimestamps.set(id, Date.now() + this.unloadTimeout);
+    return newLevel;
+}
 
-global.getExperienceToLevel = currentLevel => {
+exports.getExperienceToLevel = currentLevel => {
     if (typeof currentLevel !== "number") return NaN;
     if (Number.isNaN(currentLevel)) return NaN;
     if (!Number.isFinite(currentLevel)) return Infinity;
 
     if (currentLevel < 0) return NaN;
-    else if (currentLevel === 0) return blankLevel.experiencedNeededToLevel;
-    else if (currentLevel > maxLevel) return Infinity;
+    else if (currentLevel === 0) return this.blankLevel.experiencedNeededToLevel;
+    else if (currentLevel > this.maxLevel) return Infinity;
     else return Math.round((currentLevel ** (7/3) + (500 * currentLevel)));
 }
-global.getExperienceToReachLevel = desiredLevel => {
+exports.getExperienceToReachLevel = desiredLevel => {
     if (typeof desiredLevel !== "number") return NaN;
     if (Number.isNaN(desiredLevel)) return NaN;
     if (!Number.isFinite(desiredLevel)) return Infinity;
 
     if (desiredLevel < 0) return NaN;
-    else if (desiredLevel === 0) return blankLevel.experiencedNeededToLevel;
-    else if (desiredLevel > maxLevel) return Infinity;
+    else if (desiredLevel === 0) return this.blankLevel.experiencedNeededToLevel;
+    else if (desiredLevel > this.maxLevel) return Infinity;
     else {
         let experience = 0;
         let currentLevel = 0;
         while (currentLevel++ <= desiredLevel) {
-            experience += getExperienceToLevel(currentLevel);
+            experience += this.getExperienceToLevel(currentLevel);
         }
 
         return experience;
@@ -68,7 +104,7 @@ function manageLevelRoles(member, roleToAdd, roleToRemove) {
     }).catch(err => messageDevs(`Unable to add level role <@&${roleToAdd}> to <@${member.id}>: ${err}`));
 }
 
-global.addUserExperience = (userIdOrMessage, amount) => {
+exports.addUserExperience = (userIdOrMessage, amount) => {
     let isMessage = userIdOrMessage instanceof Discord.Message;
     let isString = typeof userIdOrMessage === "string";
 
@@ -86,59 +122,57 @@ global.addUserExperience = (userIdOrMessage, amount) => {
             throw new Error("Bad argument #2: Number must be finite, not Infinity");
 
         id = userIdOrMessage;
-        userLevelInformation = userLevels.get(id);
-        if (!userLevelInformation) 
-            userLevelInformation = Object.assign({}, blankLevel);
+        userLevelInformation = this.getLevelInformation(id);
     } else if (isMessage) {
         member = userIdOrMessage.member;
         id = userIdOrMessage.author.id;
-        userLevelInformation = userLevels.get(id);
-        if (!userLevelInformation) 
-            userLevelInformation = Object.assign({}, blankLevel);
+        userLevelInformation = this.getLevelInformation(id);
 
         if (!Number.isFinite(amount))
             amount = 0;
 
-        amount += userIdOrMessage.content.replace(fixedAmountPatterns, 'a'.repeat(fixedPatternAmount)).length;
-        amount += userIdOrMessage.attachments.size * attachmentAmount;
+        amount += userIdOrMessage.content.replace(this.fixedAmountPatterns, 'a'.repeat(this.fixedPatternAmount)).length;
+        amount += userIdOrMessage.attachments.size * this.attachmentAmount;
+        amount += userIdOrMessage.stickers.size * this.fixedPatternAmount;
 
         if (member.roles.premiumSubscriberRole) {
-            amount *= boosterMultiplier;
+            amount *= this.boosterMultiplier;
         }
     } else {
         throw new Error("Invalid argument #1: Expected a Message or string, got " + typeof userIdOrMessage);
     }
 
     if (userLevelInformation) {
-        amount = Math.round(amount);
+        amount = Math.round(amount * this.globalXPMultiplier);
         userLevelInformation.experience += amount;
         userLevelInformation.totalExperience += amount;
 
         let beforeLevel = userLevelInformation.level;
-        while (userLevelInformation.experience >= userLevelInformation.experiencedNeededToLevel && userLevelInformation.level < maxLevel) {
+        while (userLevelInformation.experience >= userLevelInformation.experiencedNeededToLevel && userLevelInformation.level < this.maxLevel) {
             userLevelInformation.experience -= userLevelInformation.experiencedNeededToLevel;
             userLevelInformation.level++;
-            userLevelInformation.experiencedNeededToLevel = getExperienceToLevel(userLevelInformation.level);
+            userLevelInformation.experiencedNeededToLevel = this.getExperienceToLevel(userLevelInformation.level);
 
             let level = userLevelInformation.level;
-            if (levelRoles[level]) {
-                let keys = Object.keys(levelRoles);
+            if (this.levelRoles[level]) {
+                let keys = Object.keys(this.levelRoles);
                 let lastRoleIndex = keys.indexOf(level.toString()) - 1;
-                let roleToRemove = levelRoles[keys[lastRoleIndex]];
+                let roleToRemove = this.levelRoles[keys[lastRoleIndex]];
                 
                 if (!member) {
                     client.guilds.cache.first().members.fetch(userIdOrMessage)
-                        .then(member => manageLevelRoles(member, levelRoles[level], roleToRemove))
-                        .catch(err => messageDevs(`Couldn't fetch member for **${userIdOrMessage}** so no level roles were added or removed: ${err}`));
+                        .then(member => manageLevelRoles(member, this.levelRoles[level], roleToRemove))
+                        .catch(err => messageDevs(`Couldn't fetch member for **${userIdOrMessage}** so no level roles were added or removed:\`\`\`\n${err.stack}\`\`\``));
                 } else {
-                    manageLevelRoles(member, levelRoles[level], roleToRemove);
+                    manageLevelRoles(member, this.levelRoles[level], roleToRemove);
                 }
             }
         }
 
-        userLevels.set(id, userLevelInformation);
-        fs.writeFile(`${levelsDirectory}/${id}.json`, JSON.stringify(userLevelInformation), error => {
-            if (error) messageDevs(`Unable to save **${id}.json** (<@${id}>): \`${error}\``);
+        this.userLevels.set(id, userLevelInformation);
+        this.unloadLevelDataTimestamps.set(id, Date.now() + this.unloadTimeout);
+        fs.writeFile(`${this.levelsDirectory}${id}.json`, JSON.stringify(userLevelInformation), error => {
+            if (error) messageDevs(`Unable to save **${id}.json** (<@${id}>):\`\`\`\n${error.stack}\`\`\``);
         });
 
         let levelDifference = userLevelInformation.level - beforeLevel;
@@ -148,24 +182,33 @@ global.addUserExperience = (userIdOrMessage, amount) => {
     }
 }
 
+setInterval(() => {
+    let now = Date.now();
+    for (let [id, timestamp] of this.unloadLevelDataTimestamps) {
+        if (now >= timestamp) {
+            this.unloadLevelDataTimestamps.delete(id);
+            this.userLevels.delete(id);
+        }
+    }
+}, 1000);
+
 let messageCache = new Map();
 let blankMessageCache = {
     currentIndex: 0,
     messages: (new Array(50)).fill('')
 }
 
-exports.levelUpReaction = '1136371604339834901';
-
 let levelingChannel;
 exports.callback = async message => {
+    // if (message.author.id !== "292447249672175618") return;
     if (client.user.id !== liveClientId) return; // Don't want to track leveling on dev clients
+    if (message.author.bot) return; // Don't track bots
 
-    if (message.author.bot) return;
-
-    let memberLevel = userLevels.get(message.member.id);
-    if (!memberLevel) {
-        memberLevel = Object.assign({}, blankLevel);
-        userLevels.set(message.author.id, memberLevel);
+    let memberLevel;
+    try {
+        memberLevel = this.getLevelInformation(message.author.id);
+    } catch (err) {
+        return message.reply(`Unable to load your level information:\`\`\`\n${err.stack}\`\`\``);
     }
 
     let cache = messageCache.get(message.member.id);
@@ -174,8 +217,8 @@ exports.callback = async message => {
         messageCache.set(message.member.id, cache);
     }
 
-    let meetsMessageLength = message.content.length >= minimumMessageLength;
-    let offCooldown        = message.createdTimestamp - memberLevel.lastMessageTimestamp >= cooldown;
+    let meetsMessageLength = message.content.length >= this.minimumMessageLength;
+    let offCooldown        = message.createdTimestamp - memberLevel.lastMessageTimestamp >= this.cooldown;
 
     // Reset for every message instead of when XP is added to help prevent copy/paste spam
     memberLevel.lastMessageTimestamp = message.createdTimestamp;
@@ -185,7 +228,7 @@ exports.callback = async message => {
     }
 
     if (meetsMessageLength && offCooldown) {
-        let levelData = addUserExperience(message);
+        let levelData = this.addUserExperience(message);
 
         cache.messages[cache.currentIndex] = message.content;
         cache.currentIndex++;
@@ -194,13 +237,13 @@ exports.callback = async message => {
         if (levelData.levelDifference > 0) {
             message.react(this.levelUpReaction);
             if (!levelingChannel) {
-                levelingChannel = await client.guilds.cache.first().channels.fetch(levelingAnnouncementChannel);
+                levelingChannel = await client.guilds.cache.first().channels.fetch(this.levelingAnnouncementChannel);
             }
 
             let name = levelData.wantsPing ? `<@${message.author.id}>` : `**${message.member.displayName}**`;
             let differenceInLevel = `**${levelData.beforeLevel}** -> **${levelData.level}**`;
 
-            let xpToLevel = getExperienceToLevel(levelData.level);
+            let xpToLevel = this.getExperienceToLevel(levelData.level);
             let xpToLevelPercent = ((levelData.experience / xpToLevel) * 100).toFixed(2);
 
             let lines = [
@@ -211,8 +254,7 @@ exports.callback = async message => {
             if (levelData.wantsPing) 
                 lines.push(`Don't want pinged? Use </toggle-level-ping:1080700415743639692>`);
 
-            let response = lines.join('\n');
-            levelingChannel.send(response);
+            levelingChannel.send(lines.join('\n'));
         }
     }
 }
